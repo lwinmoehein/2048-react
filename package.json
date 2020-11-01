@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "prettier --write --ignore-unknown .",
-    "deploy": "next build && next export && git add out/ && git commit -m \"Deploy gh-pages\" && git subtree push --prefix out origin gh-pages"
+    "deploy": "next build && next export -o docs && git add docs/ && git commit -m \"Deploy gh-pages\" && git push"
   },
   "dependencies": {
     "next": "^10.0.0",
