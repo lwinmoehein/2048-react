@@ -8,14 +8,37 @@ export const Game2048 = (props) => {
     [null, null, null, null],
     [null, null, 1, null],
     [null, 2, 2, 4],
-    [null, 4, 8, 16],
+    [null, 4, 8, 2048],
   ];
 
-  const { gameState, cancelLastAction, canCancel } = use2048({ initialValues });
+  const {
+    gameState,
+    cancelLastAction,
+    canCancel,
+    loss,
+    win,
+    continuing,
+    continueGame,
+    resetGame,
+  } = use2048({
+    initialValues: undefined,
+  });
   return (
     <div>
-      <Grid2048 gameState={gameState} />
+      {gameState && <Grid2048 gameState={gameState} />}
       {canCancel && <button onClick={() => cancelLastAction()}>Cancel</button>}
+      {loss && (
+        <div>
+          <h1>You lost</h1>
+          <button onClick={() => resetGame()}>try again!</button>
+        </div>
+      )}
+      {win && !continuing && (
+        <div>
+          <h1>You won</h1>
+          <button onClick={() => continueGame()}>continue!</button>
+        </div>
+      )}
     </div>
   );
 };

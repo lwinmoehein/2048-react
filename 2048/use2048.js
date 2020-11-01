@@ -1,13 +1,20 @@
 import { useCallback, useEffect, useReducer } from "react";
 
+const randInt = (max, min = 0) => Math.floor(Math.random() * (max - min) + min);
+const randChoice = (arr) => arr[randInt(arr.length)];
+
 class Game {
-  constructor(values, history = []) {
-    this.loss = false;
+  constructor({ values, history = [], continuing = false }) {
     this.history = history;
+    this.loss = false;
+    this.win = false;
+    this.continuing = continuing;
     if (values) {
       this.values = values;
+      this.checkLoss();
     } else {
       this.values = this.emptyValues();
+      this.randomFill();
     }
   }
 
@@ -15,9 +22,54 @@ class Game {
     return [...this.values[idx]];
   };
 
+  getEmptyCells = () => {
+    return this.getRows().reduce((arr, row, i) => {
+      row.reduce((arr, cell, j) => {
+        if (cell == null) {
+          arr.push([i, j]);
+        }
+        return arr;
+      }, arr);
+      return arr;
+    }, []);
+  };
+
+  randCellValue = () => {
+    return Math.random() < 0.75 ? 1 : 2;
+  };
+
+  randomFill = (direction) => {
+    let emptyCells = this.getEmptyCells();
+    switch (direction) {
+      case "left": {
+        emptyCells = emptyCells.filter(([i, j]) => j === 3);
+        break;
+      }
+      case "up": {
+        emptyCells = emptyCells.filter(([i, j]) => i === 3);
+        break;
+      }
+      case "right": {
+        emptyCells = emptyCells.filter(([i, j]) => j === 0);
+        break;
+      }
+      case "down": {
+        emptyCells = emptyCells.filter(([i, j]) => i === 0);
+        break;
+      }
+      default:
+        break;
+    }
+    const [i, j] = randChoice(emptyCells);
+    this.values[i][j] = this.randCellValue();
+  };
+
   // Return true if loss
   checkLoss = () => {
-    this.loss = this.getRows().some((row) => !row.some((elt) => elt == null));
+    this.loss = this.getRows().every((row) => row.every((elt) => elt != null));
+    this.win = this.getRows().some((row) =>
+      row.some((elt) => elt && elt >= 2048)
+    );
   };
 
   getColumn = (idx) => {
@@ -55,11 +107,18 @@ class Game {
   // return true if elements where moved
   moveLine = (line) => {
     let idx = 0;
+    let justMerged = false;
     return line
       .reduce(
         (newLine, elt) => {
           if (elt != null) {
-            newLine[idx++] = elt;
+            if (idx > 0 && newLine[idx - 1] === elt && !justMerged) {
+              newLine[idx - 1] = 2 * elt;
+              justMerged = true;
+            } else {
+              newLine[idx++] = elt;
+              justMerged = false;
+            }
           }
           return newLine;
         },
@@ -77,6 +136,9 @@ class Game {
   };
 
   move = (direction) => {
+    if (this.loss) {
+      return;
+    }
     this.history = [this.values, ...this.history];
     switch (direction) {
       case "left": {
@@ -104,11 +166,18 @@ class Game {
       default:
         throw new Error(`unknown direction: '${direction}'`);
     }
+    this.randomFill(direction);
     this.checkLoss();
   };
 
   getState = () => {
-    return { values: this.values, loss: this.loss, history: this.history };
+    return {
+      values: this.values,
+      loss: this.loss,
+      win: this.win,
+      continuing: this.continuing,
+      history: this.history,
+    };
   };
 
   cancel = (quantity) => {
@@ -133,7 +202,8 @@ function reducer(state, action) {
     case "up":
     case "right":
     case "down": {
-      const game = new Game(state.values, state.history);
+      const { values, history, continuing } = state;
+      const game = new Game({ values, history, continuing });
       game.move(action.type);
       return game.getState();
     }
@@ -141,17 +211,17 @@ function reducer(state, action) {
       if (!state.history?.length) {
         return state;
       }
-      const game = new Game(state.values, state.history);
+      const { values, history, continuing } = state;
+      const game = new Game({ values, history, continuing });
       game.cancel(action.quantity ?? 1);
       return game.getState();
     }
-    default: {
-      if (state) {
-        return state;
-      }
-      const game = new Game();
-      return game.getState();
-    }
+    case "reset":
+      return getInitialState();
+    case "continue":
+      return { ...state, continuing: true };
+    default:
+      state;
   }
 }
 
@@ -178,8 +248,13 @@ const _handleKeyDown = (dispatch) => (event) => {
   }
 };
 
+const getInitialState = (values) => {
+  const game = new Game({ values });
+  return game.getState();
+};
+
 export const use2048 = ({ initialValues }) => {
-  const [state, dispatch] = useReducer(reducer, { values: initialValues });
+  const [state, dispatch] = useReducer(reducer, getInitialState(initialValues));
 
   useEffect(() => {
     const handler = _handleKeyDown(dispatch);
@@ -194,9 +269,25 @@ export const use2048 = ({ initialValues }) => {
     [dispatch]
   );
 
+  const resetGame = useCallback(
+    (quantity = 1) => {
+      dispatch({ type: "reset" });
+    },
+    [dispatch]
+  );
+
+  const continueGame = useCallback(() => {
+    dispatch({ type: "continue" });
+  }, [dispatch]);
+
   return {
     gameState: state.values,
+    loss: state.loss,
+    win: state.win,
+    continuing: state.continuing,
     cancelLastAction,
     canCancel: !!state.history?.length,
+    continueGame,
+    resetGame,
   };
 };
