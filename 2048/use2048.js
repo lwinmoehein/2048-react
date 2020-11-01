@@ -298,7 +298,7 @@ const getInitialState = (values) => {
   return game.getState();
 };
 
-export const use2048 = ({ initialValues }) => {
+export const use2048 = ({ initialValues } = {}) => {
   const [state, dispatch] = useReducer(reducer, getInitialState(initialValues));
 
   useEffect(() => {
