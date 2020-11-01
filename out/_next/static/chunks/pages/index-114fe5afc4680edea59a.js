@@ -1623,21 +1623,30 @@ _N_E = (window.webpackJsonp_N_E = window.webpackJsonp_N_E || []).push([
                 },
                 "Cancel"
               ),
-            i &&
-              Me(
-                "div",
-                null,
-                Me("h1", null, "You lost"),
-                Me(
+            i
+              ? Me(
+                  "div",
+                  null,
+                  Me("h1", null, "You lost"),
+                  Me(
+                    "button",
+                    {
+                      onClick: function () {
+                        return u();
+                      },
+                    },
+                    "try again!"
+                  )
+                )
+              : Me(
                   "button",
                   {
                     onClick: function () {
                       return u();
                     },
                   },
-                  "try again!"
-                )
-              ),
+                  "restart"
+                ),
             s &&
               !c &&
               Me(

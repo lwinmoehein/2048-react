@@ -1,6 +1,6 @@
 self.__BUILD_MANIFEST = {
   __rewrites: [],
-  "/": ["static\u002Fchunks\u002Fpages\u002Findex-de2934c748fab3cd4f34.js"],
+  "/": ["static\u002Fchunks\u002Fpages\u002Findex-114fe5afc4680edea59a.js"],
   "/_error": [
     "static\u002Fchunks\u002Fpages\u002F_error-f4f567df00ce0843964e.js",
   ],
