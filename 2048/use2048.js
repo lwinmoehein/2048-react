@@ -66,7 +66,12 @@ class Game {
 
   // Return true if loss
   checkLoss = () => {
-    this.loss = this.getRows().every((row) => row.every((elt) => elt != null));
+    this.loss = !(
+      this.canMove("left") ||
+      this.canMove("up") ||
+      this.canMove("right") ||
+      this.canMove("down")
+    );
     this.win = this.getRows().some((row) =>
       row.some((elt) => elt && elt >= 2048)
     );
@@ -135,8 +140,46 @@ class Game {
     return [0, 1, 2, 3].map(this.getColumn);
   };
 
+  canMoveLine = (line) => {
+    let canMove = false;
+    let hasNullBefore = false;
+    let previousNonNull = null;
+    line.forEach((elt) => {
+      if (elt != null) {
+        if (elt === previousNonNull || hasNullBefore) {
+          canMove = true;
+        }
+
+        previousNonNull = elt;
+      } else {
+        hasNullBefore = true;
+      }
+    });
+    return canMove;
+  };
+
+  canMove = (direction) => {
+    switch (direction) {
+      case "left":
+        return this.getRows().map(this.canMoveLine).some(Boolean);
+      case "right":
+        return this.getRows()
+          .map((line) => this.canMoveLine([...line].reverse()))
+          .some(Boolean);
+      case "up":
+        return this.getColumns().map(this.canMoveLine).some(Boolean);
+      case "down":
+        return this.getColumns()
+          .map((line) => this.canMoveLine([...line].reverse()))
+          .some(Boolean);
+      default:
+        throw new Error(`unknown direction: '${direction}'`);
+    }
+  };
+
   move = (direction) => {
-    if (this.loss) {
+    const canMove = this.canMove(direction);
+    if (this.loss || !canMove) {
       return;
     }
     this.history = [this.values, ...this.history];
@@ -147,7 +190,9 @@ class Game {
       }
       case "right": {
         this.setRows(
-          this.getRows().map((row) => this.moveLine(row.reverse()).reverse())
+          this.getRows().map((row) =>
+            this.moveLine([...row].reverse()).reverse()
+          )
         );
         break;
       }
@@ -158,7 +203,7 @@ class Game {
       case "down": {
         this.setColumns(
           this.getColumns().map((line) =>
-            this.moveLine(line.reverse()).reverse()
+            this.moveLine([...line].reverse()).reverse()
           )
         );
         break;
